@@ -1,5 +1,7 @@
 #include "ServerUDP.h"
 #include <iostream>
+#include<vector>
+#include<string>
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 
@@ -10,7 +12,11 @@ const unsigned short SERVERPORT = 8888;
 // 送受信するメッセージの最大値
 const unsigned int MESSAGELENGTH = 1024;
 
+enum STATUS {
+	WAIT = 0,//接続待ち
+	PLAY,//ゲーム中
 
+};
 int main()
 {
 	std::cout << "Chat Server" << std::endl;
@@ -49,38 +55,54 @@ int main()
 		return 1;
 	}
 	std::cout << "Success: bind" << std::endl;
-
-
+	std::vector<struct sockaddr_in> from{ 2 };//２プレイヤーのアドレス
+	std::string strmsg;
+	//ret = recvfrom(sock, strmsg, MESSAGELENGTH, );
+	unsigned long cmdarg = 0x01;
+	ioctlsocket(sock, FIONBIO, &cmdarg);//ノンブロッキング化
+	STATUS stat = WAIT;
 	while (true)
 	{
-		char buff[MESSAGELENGTH];			// 送受信メッセージの格納領域
-		struct sockaddr_in fromAddr;		// 送信元アドレスの格納領域
-		int fromlen = sizeof(fromAddr);		// fromAddrのサイズ
+		switch (stat){
+		case WAIT:
+			char msg[MESSAGELENGTH]{};
+			sockaddr_in tmpaddr;
 
-		// 受信待ち
-		std::cout << "wait..." << std::endl;
 
-		// 受信	\0は送ってこないバージョン
-		ret = recvfrom(sock, buff, sizeof(buff) - 1, 0, (struct sockaddr*)&fromAddr, &fromlen);
-		if (ret < 0)
-		{
-			std::cout << "Error: recvfrom ( ErrorCode:" << WSAGetLastError() << " )" << std::endl;
-			return 1;
+
+			break;
+		case PLAY:
+
 		}
-		buff[ret] = '\0';	// 終端記号追加
-		std::cout << "Receive message : " << buff << std::endl;
+			;
+		//char buff[MESSAGELENGTH];			// 送受信メッセージの格納領域
+		//struct sockaddr_in fromAddr;		// 送信元アドレスの格納領域
+		//int fromlen = sizeof(fromAddr);		// fromAddrのサイズ
 
-		// 送信用メッセージの入力
-		std::cout << "Input message : ";
-		std::cin >> buff;
+		//// 受信待ち
+		//std::cout << "wait..." << std::endl;
 
-		// 送信！
-		ret = sendto(sock, buff, strlen(buff), 0, (struct sockaddr*)&fromAddr, fromlen);
-		if (ret != strlen(buff))
-		{
-			std::cout << "Error: sendto ( ErrorCode:" << WSAGetLastError() << " )" << std::endl;
-			return 1;
-		}
+		//// 受信	\0は送ってこないバージョン
+		//ret = recvfrom(sock, buff, sizeof(buff) - 1, 0, (struct sockaddr*)&fromAddr, &fromlen);
+		//if (ret < 0)
+		//{
+		//	std::cout << "Error: recvfrom ( ErrorCode:" << WSAGetLastError() << " )" << std::endl;
+		//	return 1;
+		//}
+		//buff[ret] = '\0';	// 終端記号追加
+		//std::cout << "Receive message : " << buff << std::endl;
+
+		//// 送信用メッセージの入力
+		//std::cout << "Input message : ";
+		//std::cin >> buff;
+
+		//// 送信！
+		//ret = sendto(sock, buff, strlen(buff), 0, (struct sockaddr*)&fromAddr, fromlen);
+		//if (ret != strlen(buff))
+		//{
+		//	std::cout << "Error: sendto ( ErrorCode:" << WSAGetLastError() << " )" << std::endl;
+		//	return 1;
+		//}
 	}
 
 	return 0;
