@@ -56,8 +56,7 @@ int main()
 	}
 	std::cout << "Success: bind" << std::endl;
 	std::vector<struct sockaddr_in> from{ 2 };//２プレイヤーのアドレス
-	std::string strmsg;
-	//ret = recvfrom(sock, strmsg, MESSAGELENGTH, );
+
 	unsigned long cmdarg = 0x01;
 	ioctlsocket(sock, FIONBIO, &cmdarg);//ノンブロッキング化
 	STATUS stat = WAIT;
@@ -74,15 +73,15 @@ int main()
 
 			break;
 		case PLAY:
-			char msg[MESSAGELENGTH]{};
+			char recvmsg[MESSAGELENGTH]{};
 			struct sockaddr_in tempsock;
 			int fromlen = sizeof(tempsock);
-			ret=recvfrom(sock, msg,MESSAGELENGTH,0,(struct sockaddr*)&tempsock,&fromlen);
+			ret=recvfrom(sock, recvmsg,MESSAGELENGTH,0,(struct sockaddr*)&tempsock,&fromlen);
 			if (ret != WSAEWOULDBLOCK)
 			{
 				std::cout << "Error:Recv" << ret << std::endl;
 			}
-
+			//此処でtempsockのIP毎に処理振り分け
 
 
 		}
