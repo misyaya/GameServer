@@ -4,9 +4,9 @@
 #include<string>
 #include <WinSock2.h>
 #include <WS2tcpip.h>
-
+#include<chrono>
 #pragma comment( lib, "ws2_32.lib" )
-
+using std::chrono::milliseconds;
 // ポート番号
 const unsigned short SERVERPORT = 8888;
 // 送受信するメッセージの最大値
@@ -61,17 +61,29 @@ int main()
 	unsigned long cmdarg = 0x01;
 	ioctlsocket(sock, FIONBIO, &cmdarg);//ノンブロッキング化
 	STATUS stat = WAIT;
+
+	//auto begintime = std::chrono::steady_clock::now();
 	while (true)
 	{
 		switch (stat){
 		case WAIT:
 			char msg[MESSAGELENGTH]{};
-			sockaddr_in tmpaddr;
+			
 
 
 
 			break;
 		case PLAY:
+			char msg[MESSAGELENGTH]{};
+			struct sockaddr_in tempsock;
+			int fromlen = sizeof(tempsock);
+			ret=recvfrom(sock, msg,MESSAGELENGTH,0,(struct sockaddr*)&tempsock,&fromlen);
+			if (ret != WSAEWOULDBLOCK)
+			{
+				std::cout << "Error:Recv" << ret << std::endl;
+			}
+
+
 
 		}
 			;
