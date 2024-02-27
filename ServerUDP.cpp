@@ -11,29 +11,38 @@ const unsigned short SERVERPORT = 8888;
 const unsigned int MESSAGELENGTH = 1024;
 
 
+using std::cout;
+using std::cin;
+using std::endl;
+using std::string;
+
+string SetWord();
+void Judgement(string _buff);
+
+
 int main()
 {
-	std::cout << "Chat Server" << std::endl;
+	cout << "Chat Server" << endl;
 
 
 	WSADATA wsaData;
 	int ret = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (ret != 0)
 	{
-		std::cout << "Error: InitWinSock ( ErrorCode:" << ret << " )" << std::endl;
-		return 1;	// おーわり！
+		cout << "Error: InitWinSock ( ErrorCode:" << ret << " )" << endl;
+		return 1;	// 終了
 	}
-	std::cout << "Success: InitWinSock" << std::endl;
+	cout << "Success: InitWinSock" << endl;
 
 
 	// UDPソケットの作成
 	int sock;
 	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
 	{
-		std::cout << "Error: socket ( ErrorCode:" << WSAGetLastError() << " )" << std::endl;
-		return 1;	// おーわり！
+		cout << "Error: socket ( ErrorCode:" << WSAGetLastError() << " )" << endl;
+		return 1;	// 終了
 	}
-	std::cout << "Success: socket" << std::endl;
+	cout << "Success: socket" << endl;
 
 
 	// 固定アドレスにするためにソケットアドレス情報の割り当て
@@ -45,10 +54,10 @@ int main()
 
 	if (bind(sock, (struct sockaddr*)&bindAddr, sizeof(bindAddr)) < 0)
 	{
-		std::cout << "Error: bind ( ErrorCode:" << WSAGetLastError() << " )" << std::endl;
-		return 1;
+		cout << "Error: bind ( ErrorCode:" << WSAGetLastError() << " )" << endl;
+		return 1; // 終了
 	}
-	std::cout << "Success: bind" << std::endl;
+	cout << "Success: bind" << endl;
 
 
 	while (true)
@@ -58,30 +67,58 @@ int main()
 		int fromlen = sizeof(fromAddr);		// fromAddrのサイズ
 
 		// 受信待ち
-		std::cout << "wait..." << std::endl;
+		cout << "wait..." << endl;
 
 		// 受信	\0は送ってこないバージョン
 		ret = recvfrom(sock, buff, sizeof(buff) - 1, 0, (struct sockaddr*)&fromAddr, &fromlen);
 		if (ret < 0)
 		{
-			std::cout << "Error: recvfrom ( ErrorCode:" << WSAGetLastError() << " )" << std::endl;
+			cout << "Error: recvfrom ( ErrorCode:" << WSAGetLastError() << " )" << endl;
 			return 1;
 		}
 		buff[ret] = '\0';	// 終端記号追加
-		std::cout << "Receive message : " << buff << std::endl;
+		cout << "Receive message : " << buff << endl;
+		
 
 		// 送信用メッセージの入力
-		std::cout << "Input message : ";
-		std::cin >> buff;
+		cout << "Input message : ";
+		string mon = SetWord();
+		cin >> buff;
+		//buff = SetWord();
 
 		// 送信！
 		ret = sendto(sock, buff, strlen(buff), 0, (struct sockaddr*)&fromAddr, fromlen);
 		if (ret != strlen(buff))
 		{
-			std::cout << "Error: sendto ( ErrorCode:" << WSAGetLastError() << " )" << std::endl;
+			cout << "Error: sendto ( ErrorCode:" << WSAGetLastError() << " )" << endl;
 			return 1;
 		}
 	}
 
 	return 0;
+}
+
+string SetWord()
+{
+	int number = 5;
+
+	// 乱数のシードを設定
+	srand(static_cast<unsigned>(time(nullptr)));
+	string word[5]{ "mmm","nnn","sss","ttt", "lll" };
+
+	int x = rand() % number;
+
+	return word[x];
+}
+
+void Judgement(string _buff)
+{
+	string answer =  SetWord();
+
+	do
+	{
+
+	} while (_buff == answer);
+
+	cout << "正解！" << endl;
 }
