@@ -2,6 +2,7 @@
 #include <iostream>
 #include<vector>
 #include<string>
+#include<map>
 #include <WinSock2.h>
 #include <WS2tcpip.h>
 #include<chrono>
@@ -17,6 +18,15 @@ enum STATUS {
 	PLAY,//ゲーム中
 
 };
+
+namespace {
+	struct playerdata {
+
+	};//各接続プレイヤーの設定
+	std::map<std::string, playerdata> datas;
+
+
+}
 int main()
 {
 	std::cout << "Chat Server" << std::endl;
@@ -82,7 +92,8 @@ int main()
 				std::cout << "Error:Recv" << ret << std::endl;
 			}
 			//此処でtempsockのIP毎に処理振り分け
-
+			char sender[INET_ADDRSTRLEN];
+			inet_ntop(AF_INET, &(tempsock.sin_addr), sender, INET_ADDRSTRLEN);
 
 		}
 			;
