@@ -1,13 +1,15 @@
-#include "ServerUDP.h"
+ï»¿#include "ServerUDP.h"
 #include <iostream>
 #include <WinSock2.h>
 #include <WS2tcpip.h>
+#include <cstring>
+#include <algorithm>
 
 #pragma comment( lib, "ws2_32.lib" )
 
-// ƒ|[ƒg”Ô†
+// ãƒãƒ¼ãƒˆç•ªå·
 const unsigned short SERVERPORT = 8888;
-// ‘—óM‚·‚éƒƒbƒZ[ƒW‚ÌÅ‘å’l
+// é€å—ä¿¡ã™ã‚‹ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã®æœ€å¤§å€¤
 const unsigned int MESSAGELENGTH = 1024;
 
 
@@ -16,8 +18,17 @@ using std::cin;
 using std::endl;
 using std::string;
 
+string answer;
+string standby;
+
+int num = 0;
+
+int Recv(int sock, char* buff, sockaddr_in &fromAddr, int fromlen);
+int Send(int sock, char* buff, sockaddr_in& fromAddr, int fromlen);
+int reSend(int sock, char* buff, sockaddr_in& fromAddr, int fromlen);
+
 string SetWord();
-void Judgement(string _buff);
+bool Judgement(string _buff);
 
 
 int main()
@@ -30,22 +41,22 @@ int main()
 	if (ret != 0)
 	{
 		cout << "Error: InitWinSock ( ErrorCode:" << ret << " )" << endl;
-		return 1;	// I—¹
+		return 1;	// çµ‚äº†
 	}
 	cout << "Success: InitWinSock" << endl;
 
 
-	// UDPƒ\ƒPƒbƒg‚Ìì¬
+	// UDPã‚½ã‚±ãƒƒãƒˆã®ä½œæˆ
 	int sock;
 	if ((sock = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
 	{
 		cout << "Error: socket ( ErrorCode:" << WSAGetLastError() << " )" << endl;
-		return 1;	// I—¹
+		return 1;	// çµ‚äº†
 	}
 	cout << "Success: socket" << endl;
 
 
-	// ŒÅ’èƒAƒhƒŒƒX‚É‚·‚é‚½‚ß‚Éƒ\ƒPƒbƒgƒAƒhƒŒƒXî•ñ‚ÌŠ„‚è“–‚Ä
+	// å›ºå®šã‚¢ãƒ‰ãƒ¬ã‚¹ã«ã™ã‚‹ãŸã‚ã«ã‚½ã‚±ãƒƒãƒˆã‚¢ãƒ‰ãƒ¬ã‚¹æƒ…å ±ã®å‰²ã‚Šå½“ã¦
 	struct sockaddr_in bindAddr;
 	memset(&bindAddr, 0, sizeof(bindAddr));
 	bindAddr.sin_family = AF_INET;
@@ -55,70 +66,133 @@ int main()
 	if (bind(sock, (struct sockaddr*)&bindAddr, sizeof(bindAddr)) < 0)
 	{
 		cout << "Error: bind ( ErrorCode:" << WSAGetLastError() << " )" << endl;
-		return 1; // I—¹
+		return 1; // çµ‚äº†
 	}
 	cout << "Success: bind" << endl;
 
+	char buff[MESSAGELENGTH];			// é€å—ä¿¡ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã®æ ¼ç´é ˜åŸŸ
+	//char buff[MESSAGELENGTH];			// é€å—ä¿¡ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã®æ ¼ç´é ˜åŸŸ
+	struct sockaddr_in fromAddr;		// é€ä¿¡å…ƒã‚¢ãƒ‰ãƒ¬ã‚¹ã®æ ¼ç´é ˜åŸŸ
+	int fromlen = sizeof(fromAddr);		// fromAddrã®ã‚µã‚¤ã‚º
+
+	// å—ä¿¡å¾…ã¡
+	cout << "wait..." << endl;
+
+	Recv(sock, buff, fromAddr, fromlen);
+	standby = buff;
+
+	answer = SetWord();
+	// æ–‡å­—åˆ—ã‚’charé…åˆ—ã«ã‚³ãƒ”ãƒ¼
+	size_t length = min(answer.length(), static_cast<size_t>(MESSAGELENGTH - 1));
+	strncpy_s(buff, MESSAGELENGTH, answer.c_str(), length);
+	buff[length] = '\0';  // çµ‚ç«¯æ–‡å­—ã‚’è¿½åŠ 
+
+	Send(sock, buff, fromAddr, fromlen);
 
 	while (true)
 	{
-		char buff[MESSAGELENGTH];			// ‘—óMƒƒbƒZ[ƒW‚ÌŠi”[—Ìˆæ
-		struct sockaddr_in fromAddr;		// ‘—MŒ³ƒAƒhƒŒƒX‚ÌŠi”[—Ìˆæ
-		int fromlen = sizeof(fromAddr);		// fromAddr‚ÌƒTƒCƒY
-
-		// óM‘Ò‚¿
+		char buff[MESSAGELENGTH];			// é€å—ä¿¡ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã®æ ¼ç´é ˜åŸŸ
+		
+		// å—ä¿¡å¾…ã¡
 		cout << "wait..." << endl;
+		Recv(sock, buff, fromAddr, fromlen);
 
-		// óM	\0‚Í‘—‚Á‚Ä‚±‚È‚¢ƒo[ƒWƒ‡ƒ“
-		ret = recvfrom(sock, buff, sizeof(buff) - 1, 0, (struct sockaddr*)&fromAddr, &fromlen);
-		if (ret < 0)
-		{
-			cout << "Error: recvfrom ( ErrorCode:" << WSAGetLastError() << " )" << endl;
-			return 1;
-		}
-		buff[ret] = '\0';	// I’[‹L†’Ç‰Á
-		cout << "Receive message : " << buff << endl;
+			while (!Judgement(standby))
+			{
+				string one = "æ®‹å¿µï¼ã€€ã‚‚ã†ä¸€åº¦";
+
+				// æ–‡å­—åˆ—ã‚’charé…åˆ—ã«ã‚³ãƒ”ãƒ¼
+				size_t length = min(one.length(), static_cast<size_t>(MESSAGELENGTH - 1));
+				strncpy_s(buff, MESSAGELENGTH, one.c_str(), length);
+				buff[length] = '\0';  // çµ‚ç«¯æ–‡å­—ã‚’è¿½åŠ 
+
+				Send(sock, buff, fromAddr, fromlen);
+
+				Recv(sock, buff, fromAddr, fromlen);
+			}
 		
 
-		// ‘—M—pƒƒbƒZ[ƒW‚Ì“ü—Í
-		cout << "Input message : ";
-		string mon = SetWord();
-		cin >> buff;
-		//buff = SetWord();
+		answer = SetWord();
+		string one = "æ­£è§£ï¼ã€€ãŠã‚ã§ã¨ã†\nã€€ã€€ã€€ã€€ã€€ã€€ã€€ã€€ã€€æ¬¡ã®ãŠé¡Œã€€" + answer;
 
-		// ‘—MI
-		ret = sendto(sock, buff, strlen(buff), 0, (struct sockaddr*)&fromAddr, fromlen);
-		if (ret != strlen(buff))
-		{
-			cout << "Error: sendto ( ErrorCode:" << WSAGetLastError() << " )" << endl;
-			return 1;
-		}
+		// æ–‡å­—åˆ—ã‚’charé…åˆ—ã«ã‚³ãƒ”ãƒ¼
+		length = min(one.length(), static_cast<size_t>(MESSAGELENGTH - 1));
+		strncpy_s(buff, MESSAGELENGTH, one.c_str(), length);
+		buff[length] = '\0';  // çµ‚ç«¯æ–‡å­—ã‚’è¿½åŠ 
+		Send(sock, buff, fromAddr, fromlen);
 	}
 
 	return 0;
 }
 
+int Recv(int sock, char* buff, sockaddr_in &fromAddr, int fromlen)
+{
+	// å—ä¿¡
+	int ret = recvfrom(sock, buff, MESSAGELENGTH - 1, 0, (struct sockaddr*)&fromAddr, &fromlen);
+	if (ret < 0)
+	{
+		cout << "Error: recvfrom ( ErrorCode:" << WSAGetLastError() << " )" << endl;
+		return 1;
+	}
+
+	buff[ret] = '\0'; // å—ä¿¡ã—ãŸãƒ‡ãƒ¼ã‚¿ã‚’çµ‚ç«¯è¨˜å·ã§çµ‚ãˆã‚‹
+	cout << "Receive message : " << buff << endl;
+	standby = buff;
+	return 0;
+}
+
+int Send(int _sock, char* _buff, sockaddr_in& _fromAddr, int _fromlen)
+{
+	// é€ä¿¡ï¼
+	int ret = sendto(_sock, _buff, strlen(_buff), 0, (struct sockaddr*)&_fromAddr, _fromlen);
+	if (ret != strlen(_buff))
+	{
+		cout << "Error: sendto ( ErrorCode:" << WSAGetLastError() << " )" << endl;
+		return 1;
+	}
+	return 0;
+}
+
+int reSend(int _sock, char* _buff, sockaddr_in& _fromAddr, int _fromlen)
+{
+	// é€ä¿¡ï¼
+	int ret = sendto(_sock, _buff, strlen(_buff), 0, (struct sockaddr*)&_fromAddr, _fromlen);
+	if (ret != strlen(_buff))
+	{
+		cout << "Error: sendto ( ErrorCode:" << WSAGetLastError() << " )" << endl;
+		return 1;
+	}
+	return 0;
+}
+
 string SetWord()
 {
-	int number = 5;
+	int number = 10;
 
-	// —”‚ÌƒV[ƒh‚ğİ’è
+	// ä¹±æ•°ã®ã‚·ãƒ¼ãƒ‰ã‚’è¨­å®š
 	srand(static_cast<unsigned>(time(nullptr)));
-	string word[5]{ "mmm","nnn","sss","ttt", "lll" };
+	string word[10]{ "agent",
+					 "cyclone",
+					 "joker",
+					 "stylish", 
+					 "sophisticated",
+					 "abyss",
+					 "eternity",
+					 "arcana",
+					 "masquerade",
+					 "odyssey"};
 
 	int x = rand() % number;
 
 	return word[x];
 }
 
-void Judgement(string _buff)
+bool Judgement(string _buff)
 {
-	string answer =  SetWord();
-
-	do
+	if (_buff != answer)
 	{
+		return false;
+	}
 
-	} while (_buff == answer);
-
-	cout << "³‰ğI" << endl;
+	return true;
 }
