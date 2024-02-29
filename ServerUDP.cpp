@@ -24,8 +24,6 @@ namespace {
 
 	};//各接続プレイヤーの設定
 	std::map<std::string, playerdata> datas;
-
-
 }
 int main()
 {
@@ -65,7 +63,6 @@ int main()
 		return 1;
 	}
 	std::cout << "Success: bind" << std::endl;
-	std::vector<struct sockaddr_in> from{ 2 };//２プレイヤーのアドレス
 
 	unsigned long cmdarg = 0x01;
 	ioctlsocket(sock, FIONBIO, &cmdarg);//ノンブロッキング化
@@ -94,7 +91,7 @@ int main()
 			//此処でtempsockのIP毎に処理振り分け
 			char sender[INET_ADDRSTRLEN];
 			inet_ntop(AF_INET, &(tempsock.sin_addr), sender, INET_ADDRSTRLEN);
-
+			datas.at(sender);
 		}
 			;
 		//char buff[MESSAGELENGTH];			// 送受信メッセージの格納領域
